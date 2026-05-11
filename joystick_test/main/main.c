@@ -8,14 +8,17 @@
 #include "driver/adc.h"
 #include "driver/gpio.h"
 
+#define ESP_NOW_CHANNEL 6
+#define ESP_NOW_FRECUENCY_MS 200
+
 static const char *TAG = "SENDER";
 
 // ── Cambiá esta MAC por la del receptor ──────────────────────────────────────
 // Para obtenerla: corré en el receptor: ESP_LOGI(TAG, "%s", esp_mac_str);
 // o usá el ejemplo get_started/hello_world y leé el log de boot
-static uint8_t receiver_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}; // broadcast por defecto
+static uint8_t receiver_mac[6] = {0xB4, 0x8A, 0x0A, 0xB2, 0x97, 0x9C}; // broadcast por defecto
 // ─────────────────────────────────────────────────────────────────────────────
-
+//static uint8_t receiver_mac[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 #define PIN_SW      GPIO_NUM_32
 #define ADC_VRX     ADC1_CHANNEL_6   // GPIO34
 #define ADC_VRY     ADC1_CHANNEL_7   // GPIO35
@@ -42,7 +45,7 @@ static void wifi_init(void)
     esp_wifi_set_mode(WIFI_MODE_STA);
     esp_wifi_start();
     // Canal fijo — debe coincidir en ambos lados
-    esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
+    esp_wifi_set_channel(ESP_NOW_CHANNEL, WIFI_SECOND_CHAN_NONE);
 }
 
 static void espnow_init(void)
@@ -52,7 +55,7 @@ static void espnow_init(void)
 
     esp_now_peer_info_t peer = {};
     memcpy(peer.peer_addr, receiver_mac, 6);
-    peer.channel = 1;
+    peer.channel = ESP_NOW_CHANNEL;
     peer.encrypt = false;
     esp_now_add_peer(&peer);
 }
@@ -96,6 +99,6 @@ void app_main(void)
         esp_now_send(receiver_mac, (uint8_t *)&data, sizeof(data));
 
         ESP_LOGI(TAG, "X=%4d  Y=%4d  BTN=%d", data.x, data.y, data.btn);
-        vTaskDelay(pdMS_TO_TICKS(50)); // 20 Hz
+        vTaskDelay(pdMS_TO_TICKS(ESP_NOW_FRECUENCY_MS));
     }
 }
